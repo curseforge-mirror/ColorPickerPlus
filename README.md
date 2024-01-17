@@ -12,7 +12,6 @@ ColorPickerPlus replaces the standard Color Picker to provide
 - a color swatch for the color to be replaced
 - a color swatch for the chosen color
 - With these enhancements, you can precisely describe a color and coordinate colors within and between add-ons.
- 
 
 Left-click on a palette swatch will choose that color.
 
