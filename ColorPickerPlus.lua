@@ -216,19 +216,18 @@ function MOD:SetRGBfromHSV()
 end
 
 function MOD:GetAlpha()
-	local a
 	local colorAlpha
-	if isDragonflight then
-		colorAlpha = ColorPickerFrame:GetColorAlpha()
-	else
-		colorAlpha = opacitySliderFrame:GetValue()
-	end
 	if ColorPickerFrame.hasOpacity then
-		a = 1 - colorAlpha -- blizzard values are reversed from expected transparency
+		if isDragonflight then
+			colorAlpha = ColorPickerFrame:GetColorAlpha()
+		else
+			colorAlpha = 1 - opacitySliderFrame:GetValue()
+		end
 	else
-		a = 1
+		colorAlpha = 1
 	end
-	return a
+
+	return colorAlpha
 end
 
 function MOD:UpdateGradientColorOverlay() -- assumes color variables all set prior
@@ -436,7 +435,7 @@ local function OldColorOnMouseUp(frame, button)
 			ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
 			ColorPickerFrame.swatchFunc()
 			MOD:UpdateHSVfromColorPickerRGB()
-			ColorPickerFrame.Content.ColorPicker:SetColorAlpha(1 - a)
+			ColorPickerFrame.Content.ColorPicker:SetColorAlpha(a)
 		else
 			ColorPickerFrame:SetColorRGB(r, g, b)
 			ColorPickerFrame.func()
@@ -559,7 +558,7 @@ function MOD:CreateCopyPasteArea()
 			ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
 			ColorPickerFrame.swatchFunc()
 			MOD:UpdateHSVfromColorPickerRGB()
-			ColorPickerFrame.Content.ColorPicker:SetColorAlpha(1 - a)
+			ColorPickerFrame.Content.ColorPicker:SetColorAlpha(a)
 		else
 			ColorPickerFrame:SetColorRGB(r, g, b)
 			ColorPickerFrame.func()
@@ -594,7 +593,7 @@ local function PaletteSwatchOnMouseUp(frame, button)
 					ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
 					ColorPickerFrame.swatchFunc()
 					MOD:UpdateHSVfromColorPickerRGB()
-					ColorPickerFrame.Content.ColorPicker:SetColorAlpha(1 - a)
+					ColorPickerFrame.Content.ColorPicker:SetColorAlpha(a)
 				else
 					ColorPickerFrame:SetColorRGB(r, g, b)
 					ColorPickerFrame.func()
@@ -658,7 +657,7 @@ local function ClassPaletteSwatchOnMouseUp(frame, button)
 			ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
 			ColorPickerFrame.swatchFunc()
 			MOD:UpdateHSVfromColorPickerRGB()
-			ColorPickerFrame.Content.ColorPicker:SetColorAlpha(1 - a)
+			ColorPickerFrame.Content.ColorPicker:SetColorAlpha(a)
 		else
 			ColorPickerFrame:SetColorRGB(r, g, b)
 			ColorPickerFrame.func()
@@ -724,7 +723,11 @@ local function GradientOnMouseDown(self, button)
 		if not (lockedHueBar or lockedOpacityBar) then
 			lockedGradient = true
 			if ColorPickerFrame.hasOpacity then
-				lockedOpacity = 1 - (ColorPickerFrame.GetColorAlpha and ColorPickerFrame:GetColorAlpha() or opacitySliderFrame:GetValue())
+				if isDragonflight then
+					lockedOpacity = ColorPickerFrame:GetColorAlpha()
+				else
+					lockedOpacity = 1 - opacitySliderFrame:GetValue()
+				end
 			else
 				lockedOpacity = 1
 			end
@@ -842,7 +845,11 @@ local function HueBarOnMouseDown(self, button)
 		if not (lockedGradient or lockedOpacityBar) then
 			lockedHueBar = true
 			if ColorPickerFrame.hasOpacity then
-				lockedOpacity = 1 - (ColorPickerFrame.GetColorAlpha and ColorPickerFrame:GetColorAlpha() or opacitySliderFrame:GetValue())
+				if isDragonflight then
+					lockedOpacity = ColorPickerFrame:GetColorAlpha()
+				else
+					lockedOpacity = 1 - opacitySliderFrame:GetValue()
+				end
 			else
 				lockedOpacity = 1
 			end
@@ -982,16 +989,18 @@ local function OpacityBarOnUpdate(self)
 				a = 1 - ((top - y) / height)
 			end
 
-			-- blizzard reverse alpha
 			if isDragonflight then
 				ColorPickerFrame.Content.ColorPicker:SetColorAlpha(a)
+				MOD:UpdateAlphaText()
+				local r, g, b = ColorPickerFrame:GetColorRGB()
+				ColorPPChosenColor:SetBackdropColor(r, g, b, a)
 			else
+				-- blizzard reverse alpha
 				opacitySliderFrame:SetValue(a)
+				MOD:UpdateAlphaText()
+				local r, g, b = ColorPickerFrame:GetColorRGB()
+				ColorPPChosenColor:SetBackdropColor(r, g, b, 1 - a)
 			end
-
-			MOD:UpdateAlphaText()
-			local r, g, b = ColorPickerFrame:GetColorRGB()
-			ColorPPChosenColor:SetBackdropColor(r, g, b, 1 - a)
 		end
 	else
 		lockedGradient = false
@@ -1467,7 +1476,7 @@ function MOD:AlphaTextChanged(textBox, userInput)
 	a = a / 100
 
 	if isDragonflight then
-		ColorPickerFrame.Content.ColorPicker:SetColorAlpha(1 - a)
+		ColorPickerFrame.Content.ColorPicker:SetColorAlpha(a)
 		ColorPickerFrame.swatchFunc()
 	else
 		opacitySliderFrame:SetValue(1 - a)
@@ -1479,8 +1488,12 @@ function MOD:AlphaTextChanged(textBox, userInput)
 end
 
 function MOD:UpdateAlphaText()
-	local a = ColorPickerFrame.GetColorAlpha and ColorPickerFrame:GetColorAlpha() or opacitySliderFrame:GetValue() -- still keeping value OpacityFrame, to coordinate with WoW settings
-	a = (1 - a) * 100 -- alpha value is reversed
+	local a
+	if isDragonflight then
+		a = ColorPickerFrame:GetColorAlpha() * 100
+	else
+		a = 1 - opacitySliderFrame:GetValue() * 100 -- still keeping value OpacityFrame, to coordinate with WoW settings
+	end
 	a = math.floor(a + 0.05)
 	ColorPPBoxA:SetText(string.format("%d", a))
 	MOD:UpdateOpacityBarThumb()
